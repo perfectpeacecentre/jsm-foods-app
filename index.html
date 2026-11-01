@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1f5f3a">
+  <title>JSM Foods</title>
+  <style>
+:root {
+  --green: #1f5f3a;
+  --green-dark: #164a2c;
+  --bg: #f4f6f4;
+  --text: #1b1f1c;
+  --muted: #6b746e;
+  --line: #dde3de;
+  --danger: #b3261e;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.4;
+}
+[hidden] { display: none !important; }
+.center { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 18px;
+  margin: 0 0 16px;
+}
+.narrow { width: 100%; max-width: 360px; }
+h1 { margin: 0 0 4px; color: var(--green); }
+h2 { margin: 0 0 12px; font-size: 1.1rem; }
+.muted { color: var(--muted); font-size: .9rem; }
+.error { color: var(--danger); min-height: 1.2em; margin: 8px 0 0; }
+label { display: block; margin: 0 0 12px; font-size: .9rem; font-weight: 600; }
+input, select {
+  display: block; width: 100%; margin-top: 4px; padding: 11px 12px;
+  font: inherit; font-weight: 400; border: 1px solid var(--line); border-radius: 8px; background: #fff;
+}
+input:focus, select:focus { outline: 2px solid var(--green); outline-offset: 0; }
+button {
+  font: inherit; font-weight: 600; padding: 11px 16px; border: 0; border-radius: 8px;
+  background: var(--green); color: #fff; cursor: pointer;
+}
+button:hover { background: var(--green-dark); }
+button:disabled { opacity: .6; cursor: default; }
+button.ghost { background: transparent; color: var(--green); border: 1px solid var(--green); padding: 7px 12px; }
+button.danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 5px 10px; font-size: .8rem; }
+.topbar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 16px; background: #fff; border-bottom: 1px solid var(--line);
+}
+.topbar .muted { margin-left: 8px; }
+.tabs { display: flex; gap: 8px; padding: 12px 16px 0; overflow-x: auto; }
+.tabs button { background: #fff; color: var(--text); border: 1px solid var(--line); white-space: nowrap; }
+.tabs button.active { background: var(--green); color: #fff; border-color: var(--green); }
+main { padding: 12px 16px 40px; max-width: 1100px; margin: 0 auto; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+fieldset { border: 1px solid var(--line); border-radius: 8px; margin: 0 0 14px; padding: 10px 12px; }
+legend { font-size: .9rem; font-weight: 600; padding: 0 6px; }
+.checks { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
+.checks label { display: flex; align-items: center; gap: 8px; margin: 0; font-weight: 400; }
+.checks input { width: auto; margin: 0; }
+.filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; }
+.filters input, .filters select { margin: 0; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: .8rem; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; }
+td select { padding: 5px 6px; margin: 0; font-size: .85rem; }
+@media (max-width: 520px) {
+  .row, .checks { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+  <!-- LOGIN -->
+  <section id="login-view" class="center">
+    <form id="login-form" class="card narrow" autocomplete="off">
+      <h1>JSM Foods</h1>
+      <p class="muted">Sign in with your username and 4-digit PIN</p>
+      <label>Username
+        <input id="login-username" type="text" autocapitalize="none" autocorrect="off" required>
+      </label>
+      <label>PIN
+        <input id="login-pin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" required>
+      </label>
+      <button type="submit">Sign in</button>
+      <p id="login-error" class="error" role="alert"></p>
+    </form>
+  </section>
+
+  <!-- APP -->
+  <section id="app-view" hidden>
+    <header class="topbar">
+      <div>
+        <strong>JSM Foods</strong>
+        <span id="who" class="muted"></span>
+      </div>
+      <button id="logout-btn" class="ghost">Sign out</button>
+    </header>
+
+    <nav class="tabs">
+      <button data-tab="add" class="active">Add customer</button>
+      <button data-tab="list">Customers</button>
+      <button data-tab="users" id="users-tab" hidden>Staff</button>
+    </nav>
+
+    <main>
+      <!-- ADD CUSTOMER -->
+      <div id="tab-add" class="tab">
+        <form id="customer-form" class="card">
+          <h2>New customer record</h2>
+          <label>Customer name
+            <input name="name" type="text" required>
+          </label>
+          <label>Customer type
+            <select name="type" required>
+              <option value="">Select...</option>
+              <option>Distributor</option>
+              <option>Bakery</option>
+            </select>
+          </label>
+          <div class="row">
+            <label>State
+              <select name="state" id="state-select" required></select>
+            </label>
+            <label>City / Town
+              <input name="city" type="text" required>
+            </label>
+          </div>
+          <label>Phone number
+            <input name="phone" type="tel" inputmode="tel" placeholder="08012345678" required>
+          </label>
+          <label>Approx. bags of flour used per month
+            <input name="flourBags" type="number" inputmode="numeric" min="0" step="1" required>
+          </label>
+          <label>Status
+            <select name="status" required>
+              <option value="">Select...</option>
+              <option>Current</option>
+              <option>Prospective</option>
+              <option>Former</option>
+              <option>Not interested</option>
+            </select>
+          </label>
+          <fieldset>
+            <legend>Products interested in buying</legend>
+            <div id="product-boxes" class="checks"></div>
+          </fieldset>
+          <button type="submit">Save customer</button>
+          <p id="customer-msg" class="muted" role="status"></p>
+        </form>
+      </div>
+
+      <!-- CUSTOMER LIST -->
+      <div id="tab-list" class="tab" hidden>
+        <div class="card">
+          <div class="filters">
+            <input id="f-search" type="search" placeholder="Search name, city or phone">
+            <select id="f-status"><option value="">All statuses</option></select>
+            <select id="f-type">
+              <option value="">All types</option>
+              <option>Distributor</option>
+              <option>Bakery</option>
+            </select>
+            <select id="f-state"><option value="">All states</option></select>
+          </div>
+          <p id="count" class="muted"></p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th><th>Type</th><th>Location</th><th>Phone</th>
+                  <th>Bags/mo</th><th>Status</th><th>Products</th><th>Added by</th><th></th>
+                </tr>
+              </thead>
+              <tbody id="customer-rows"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- STAFF -->
+      <div id="tab-users" class="tab" hidden>
+        <form id="user-form" class="card" autocomplete="off">
+          <h2>Add a staff login</h2>
+          <label>Full name
+            <input name="displayName" type="text" required>
+          </label>
+          <label>Username (letters/numbers only, no spaces)
+            <input name="username" type="text" pattern="[a-zA-Z0-9._]{3,20}" autocapitalize="none" required>
+          </label>
+          <label>4-digit PIN
+            <input name="pin" type="text" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" required>
+          </label>
+          <label>Role
+            <select name="role" required>
+              <option value="sales">Sales</option>
+              <option value="owner">Owner</option>
+              <option value="admin">Admin</option>
+            </select>
+          </label>
+          <button type="submit">Create login</button>
+          <p id="user-msg" class="muted" role="status"></p>
+        </form>
+        <div class="card">
+          <h2>Staff</h2>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Active</th></tr></thead>
+              <tbody id="user-rows"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </section>
+
+  <script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {
+  getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword,
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc,
+  collection, query, orderBy, onSnapshot, serverTimestamp,
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+/* ====== PASTE YOUR FIREBASE CONFIG VALUES HERE (not secret) ====== */
+const firebaseConfig = {
+  apiKey: "PASTE_HERE",
+  authDomain: "PASTE_HERE",
+  projectId: "PASTE_HERE",
+  storageBucket: "PASTE_HERE",
+  messagingSenderId: "PASTE_HERE",
+  appId: "PASTE_HERE",
+};
+/* ================================================================ */
+
+/* ---------- Editable lists (change these as the business changes) ---------- */
+const PRODUCTS = [
+  "Dough Master Bread Softener",
+  "Select Baker Bread Improver",
+  "Calcium Propionate",
+  "Milk Flavour",
+  "Other",
+];
+const STATUSES = ["Current", "Prospective", "Former", "Not interested"];
+const STATES = [
+  "Abia","Adamawa","Akwa Ibom","Anambra","Bauchi","Bayelsa","Benue","Borno","Cross River","Delta",
+  "Ebonyi","Edo","Ekiti","Enugu","FCT (Abuja)","Gombe","Imo","Jigawa","Kaduna","Kano","Katsina",
+  "Kebbi","Kogi","Kwara","Lagos","Nasarawa","Niger","Ogun","Ondo","Osun","Oyo","Plateau","Rivers",
+  "Sokoto","Taraba","Yobe","Zamfara",
+];
+
+/* ---------- Firebase ---------- */
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// A second app instance, used only to create staff logins so the admin/owner stays signed in.
+const secondaryApp = initializeApp(firebaseConfig, "secondary");
+const secondaryAuth = getAuth(secondaryApp);
+
+// Firebase Auth needs an email and a password of 6+ characters.
+// We hide that: username becomes username@jsmfoods.app, and the PIN is padded.
+const toEmail = (username) => `${username.trim().toLowerCase()}@jsmfoods.app`;
+const toPassword = (pin) => `jsm-${pin}`;
+
+/* ---------- Helpers ---------- */
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const isManager = () => me && ["admin", "owner"].includes(me.role);
+
+let me = null;            // { uid, displayName, username, role, active }
+let customers = [];       // latest snapshot
+let unsubCustomers = null;
+let unsubUsers = null;
+
+/* ---------- Fill dropdowns and checkboxes ---------- */
+function fillStatic() {
+  const stateSel = $("state-select");
+  stateSel.innerHTML = `<option value="">Select...</option>` +
+    STATES.map((s) => `<option>${esc(s)}</option>`).join("");
+  $("f-state").innerHTML += STATES.map((s) => `<option>${esc(s)}</option>`).join("");
+  $("f-status").innerHTML += STATUSES.map((s) => `<option>${esc(s)}</option>`).join("");
+  $("product-boxes").innerHTML = PRODUCTS.map((p) =>
+    `<label><input type="checkbox" name="products" value="${esc(p)}"> ${esc(p)}</label>`).join("");
+}
+fillStatic();
+
+/* ---------- Login / logout ---------- */
+$("login-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const err = $("login-error");
+  err.textContent = "";
+  const btn = e.submitter;
+  btn.disabled = true;
+  try {
+    await signInWithEmailAndPassword(auth, toEmail($("login-username").value), toPassword($("login-pin").value));
+  } catch (ex) {
+    err.textContent = ex.code === "auth/too-many-requests"
+      ? "Too many attempts. Wait a few minutes and try again."
+      : "Wrong username or PIN.";
+  } finally {
+    btn.disabled = false;
+    $("login-pin").value = "";
+  }
+});
+
+$("logout-btn").addEventListener("click", () => signOut(auth));
+
+onAuthStateChanged(auth, async (user) => {
+  stopListeners();
+  if (!user) {
+    me = null;
+    $("app-view").hidden = true;
+    $("login-view").hidden = false;
+    return;
+  }
+  try {
+    const snap = await getDoc(doc(db, "users", user.uid));
+    if (!snap.exists() || snap.data().active !== true) {
+      await signOut(auth);
+      $("login-error").textContent = "This account is not active. Contact the admin.";
+      return;
+    }
+    me = { uid: user.uid, ...snap.data() };
+  } catch {
+    await signOut(auth);
+    $("login-error").textContent = "Could not load your profile. Try again.";
+    return;
+  }
+  $("who").textContent = `${me.displayName} (${me.role})`;
+  $("users-tab").hidden = !isManager();
+  $("login-view").hidden = true;
+  $("app-view").hidden = false;
+  showTab("add");
+  startCustomers();
+  if (isManager()) startUsers();
+});
+
+function stopListeners() {
+  if (unsubCustomers) { unsubCustomers(); unsubCustomers = null; }
+  if (unsubUsers) { unsubUsers(); unsubUsers = null; }
+  customers = [];
+}
+
+/* ---------- Tabs ---------- */
+function showTab(name) {
+  document.querySelectorAll(".tab").forEach((t) => (t.hidden = t.id !== `tab-${name}`));
+  document.querySelectorAll(".tabs button").forEach((b) =>
+    b.classList.toggle("active", b.dataset.tab === name));
+}
+document.querySelectorAll(".tabs button").forEach((b) =>
+  b.addEventListener("click", () => showTab(b.dataset.tab)));
+
+/* ---------- Add customer ---------- */
+$("customer-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const msg = $("customer-msg");
+  const fd = new FormData(form);
+  const phone = String(fd.get("phone")).replace(/[\s-]/g, "");
+  if (!/^(\+234|0)\d{10}$/.test(phone)) {
+    msg.textContent = "Enter a valid Nigerian phone number, e.g. 08012345678.";
+    return;
+  }
+  const btn = e.submitter;
+  btn.disabled = true;
+  msg.textContent = "Saving...";
+  try {
+    await addDoc(collection(db, "customers"), {
+      name: String(fd.get("name")).trim(),
+      type: fd.get("type"),
+      state: fd.get("state"),
+      city: String(fd.get("city")).trim(),
+      phone,
+      flourBags: Number(fd.get("flourBags")),
+      status: fd.get("status"),
+      products: fd.getAll("products"),
+      createdBy: me.uid,
+      createdByName: me.displayName,
+      createdAt: serverTimestamp(),
+    });
+    form.reset();
+    msg.textContent = "Saved.";
+  } catch {
+    msg.textContent = "Could not save. Check your connection and try again.";
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+/* ---------- Customer list ---------- */
+function startCustomers() {
+  const q = query(collection(db, "customers"), orderBy("createdAt", "desc"));
+  unsubCustomers = onSnapshot(q, (snap) => {
+    customers = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    renderCustomers();
+  }, () => { $("count").textContent = "Could not load customers."; });
+}
+
+["f-search", "f-status", "f-type", "f-state"].forEach((id) =>
+  $(id).addEventListener("input", renderCustomers));
+
+function canEdit(c) { return isManager() || c.createdBy === me.uid; }
+
+function renderCustomers() {
+  const term = $("f-search").value.trim().toLowerCase();
+  const fs = $("f-status").value, ft = $("f-type").value, fst = $("f-state").value;
+  const rows = customers.filter((c) =>
+    (!fs || c.status === fs) && (!ft || c.type === ft) && (!fst || c.state === fst) &&
+    (!term || [c.name, c.city, c.phone].some((v) => String(v ?? "").toLowerCase().includes(term))));
+  $("count").textContent = `${rows.length} of ${customers.length} customers`;
+  $("customer-rows").innerHTML = rows.map((c) => {
+    const statusCell = canEdit(c)
+      ? `<select data-status="${esc(c.id)}">${STATUSES.map((s) =>
+          `<option${s === c.status ? " selected" : ""}>${esc(s)}</option>`).join("")}</select>`
+      : esc(c.status);
+    const del = isManager() ? `<button class="danger" data-del="${esc(c.id)}">Delete</button>` : "";
+    return `<tr>
+      <td>${esc(c.name)}</td>
+      <td>${esc(c.type)}</td>
+      <td>${esc(c.city)}, ${esc(c.state)}</td>
+      <td><a href="tel:${esc(c.phone)}">${esc(c.phone)}</a></td>
+      <td>${esc(c.flourBags)}</td>
+      <td>${statusCell}</td>
+      <td>${esc((c.products || []).join(", "))}</td>
+      <td>${esc(c.createdByName)}</td>
+      <td>${del}</td>
+    </tr>`;
+  }).join("");
+}
+
+$("customer-rows").addEventListener("change", async (e) => {
+  const id = e.target.dataset.status;
+  if (!id) return;
+  try { await updateDoc(doc(db, "customers", id), { status: e.target.value }); }
+  catch { alert("Could not update status."); }
+});
+
+$("customer-rows").addEventListener("click", async (e) => {
+  const id = e.target.dataset.del;
+  if (!id) return;
+  if (!confirm("Delete this customer record? This cannot be undone.")) return;
+  try { await deleteDoc(doc(db, "customers", id)); }
+  catch { alert("Could not delete."); }
+});
+
+/* ---------- Staff management (admin / owner) ---------- */
+function startUsers() {
+  unsubUsers = onSnapshot(collection(db, "users"), (snap) => {
+    $("user-rows").innerHTML = snap.docs.map((d) => {
+      const u = d.data();
+      const self = d.id === me.uid;
+      return `<tr>
+        <td>${esc(u.displayName)}</td>
+        <td>${esc(u.username)}</td>
+        <td>${esc(u.role)}</td>
+        <td><input type="checkbox" data-active="${esc(d.id)}" ${u.active ? "checked" : ""} ${self ? "disabled" : ""}></td>
+      </tr>`;
+    }).join("");
+  });
+}
+
+$("user-rows").addEventListener("change", async (e) => {
+  const id = e.target.dataset.active;
+  if (!id) return;
+  try { await updateDoc(doc(db, "users", id), { active: e.target.checked }); }
+  catch { alert("Could not update."); e.target.checked = !e.target.checked; }
+});
+
+$("user-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const msg = $("user-msg");
+  const fd = new FormData(form);
+  const username = String(fd.get("username")).trim().toLowerCase();
+  const pin = String(fd.get("pin"));
+  if (!/^\d{4}$/.test(pin)) { msg.textContent = "PIN must be exactly 4 digits."; return; }
+  const btn = e.submitter;
+  btn.disabled = true;
+  msg.textContent = "Creating...";
+  try {
+    const cred = await createUserWithEmailAndPassword(secondaryAuth, toEmail(username), toPassword(pin));
+    await setDoc(doc(db, "users", cred.user.uid), {
+      displayName: String(fd.get("displayName")).trim(),
+      username,
+      role: fd.get("role"),
+      active: true,
+      createdAt: serverTimestamp(),
+    });
+    await signOut(secondaryAuth);
+    form.reset();
+    msg.textContent = `Login created for ${username}.`;
+  } catch (ex) {
+    msg.textContent = ex.code === "auth/email-already-in-use"
+      ? "That username is already taken."
+      : "Could not create the login. Try again.";
+  } finally {
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
